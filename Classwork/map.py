@@ -20,8 +20,6 @@ color["purple"] = (255, 000, 255)
 color["cyan"] = (000, 255, 255)
 color["yellow"] = (255, 255, 000)
 
-Path = []
-
 #Paths checked
 startVals = deque()
 found = False
@@ -55,14 +53,8 @@ class tree:
         fstNode.index = start
 
         if fstNode.value == 'B':
-            global found
-            found = True
             global goal
             goal = fstNode.index
-
-        #print(fstNode)
-
-        Path.append(start)
 
         if not root:
             root = self.root
@@ -88,47 +80,47 @@ class tree:
         if nodeL and nodeL.state and not nodeL.searched:
             nodeL.searched = True
             self.addNode(nodeL, root)
-            values.append(start-1)
+            val = start-1
+            values.append(val)
         if nodeU and nodeU.state and not nodeU.searched:
+            nodeU.searched = True
             self.addNode(nodeU, root)
-            values.append(start-limit)
+            val = start-limit
+            values.append(val)
         if nodeR and nodeR.state and not nodeR.searched:
+            nodeR.searched = True
             self.addNode(nodeR, root)
-            values.append(start+1)
+            val = start+1
+            values.append(val)
         if nodeD and nodeD.state and not nodeD.searched:
+            nodeD.searched = True
             self.addNode(nodeD, root)
-            values.append(start+limit)
+            val = start+limit
+            values.append(val)
+            
+        for child in root.children:
+            if values:
+                self.goThroughGrid(values[0], limit, limitY, map, child)
+                values.popleft()
 
-#        cont = 0
-#        for child in root.children:
-#            #print(child)
-#            self.goThroughGrid(startVals[cont], limit, limitY, map, child)
-#            cont += 1
+    def amplitudeSearch(self, node):
 
-        return values
+        values = deque()
 
-#    def searchBranch(self, node = None):
-#
-#        if not node:
-#            node = self.root
-#
-#        found = False
-#
-#        path = []
-#
-#        if node.value == 'B':
-#            found = True
-#
-#        for child in node.children:
-#            p1, f1 = self.searchBranch(child)
-#            if f1:
-#                found = f1
-#                path += p1
-#
-#        if found:
-#            path.append(node.index)
-#
-#        return path, found
+        found = False
+
+
+        if node.value == 'B':
+            found = True
+            global goal
+            goal = node.index
+
+        for child in node.children:
+            values.append(child)
+
+        print(node.children)
+
+        return values, found
 
 
 
@@ -138,7 +130,6 @@ class tree:
         global Map
         
         while node != self.root:
-            print(node)
             path.append(node.index)
             node = Map[node.parent]
 
@@ -146,8 +137,25 @@ class tree:
 
         return path
         
+    def printTree(self, root = None):
+
+        if not root:
+            root = self.root
+
+        while True:
+            print(root)
+            print(root.children)
+            if root.children:
+                root = root.children[0]
+            else:
+                break
+
+        print("Later Yo")
 
 def main():
+
+    Path = []
+
     pygame.init()
     print("Hello")
     print("Enter name of file (DON'T ENTER .in !)")
@@ -194,26 +202,50 @@ def main():
     
     labTree = tree(Map[start])
 
-    startVals.append(start)
 
-    while startVals and not found:
+    labTree.goThroughGrid(start, sh, sv, Map, Map[value])
+
+    startVals.append(labTree.root)
+
+    foundB = False
+
+    startY = 0
+    while start >= sh:
+        start -= sh
+        startY += 1
+
+    while startVals and not foundB:
+        
         value = startVals[0]
-        val = labTree.goThroughGrid(value, sh, sv, Map, Map[value])
-        for v in val:
-            startVals.append(v)
-        #print(cell)
+
+        vals, foundB = labTree.amplitudeSearch(value)
+
+        for val in vals:
+            startVals.append(val)
+
+        coord = value.index
+
         y = 0
-        while value >= sh:
-            value -= sh
+        while coord >= sh:
+            coord -= sh
             y += 1
-        pygame.draw.rect(screen, color["purple"], (nW*value, nH*y, nW, nH))
+        pygame.draw.rect(screen, color["purple"], (nW*coord, nH*y, nW, nH))
+        pygame.draw.rect(screen, color["red"], (nW*start, nH*startY, nW, nH))
         pygame.display.update()
+
         sleep(0.1)
         startVals.popleft()
+
+    global goal
 
     if goal != -1:
         Path = labTree.searchBranch(Map[goal])
         print(Path)
+        y = 0
+        while goal >= sh:
+            goal -= sh
+            y += 1
+        pygame.draw.rect(screen, color["blue"], (nW*goal, nH*y, nW, nH))
     else:
         print("No path available")
 
@@ -228,17 +260,16 @@ def main():
         pygame.display.update()
         sleep(2)
 
-        for cell in reversed(Path):
-            #print(cell)
-            y = 0
-            while cell >= sh:
-                cell -= sh
-                y += 1
-            pygame.draw.rect(screen, color["yellow"], (nW*cell, nH*y, nW, nH))
-            sleep(0.2)
-            pygame.display.update()
+        if Path:
+            for cell in reversed(Path):
+                y = 0
+                while cell >= sh:
+                    cell -= sh
+                    y += 1
+                pygame.draw.rect(screen, color["yellow"], (nW*cell, nH*y, nW, nH))
+                sleep(0.2)
+                pygame.display.update()
 
         pygame.display.update()
-        #sleep(60)
 
 main()
