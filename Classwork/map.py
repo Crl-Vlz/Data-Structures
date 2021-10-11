@@ -149,6 +149,7 @@ class tree:
 
 def main():
     pygame.init()
+    print("Hello")
     print("Enter name of file (DON'T ENTER .in !)")
     A = input()
     start = 0
